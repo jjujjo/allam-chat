@@ -36,7 +36,7 @@ async def startup():
 # ── HuggingFace config ─────────────────────────────────────
 HF_TOKEN  = os.getenv("HF_TOKEN", "")
 HF_MODEL  = "humain-ai/ALLaM-7B-Instruct-preview"
-HF_URL    = f"https://router.huggingface.co/hf-inference/models/{HF_MODEL}"
+HF_URL    = "https://router.huggingface.co/v1/chat/completions"
 
 # ── Request models ─────────────────────────────────────────
 class ChatRequest(BaseModel):
@@ -54,12 +54,10 @@ async def chat(req: ChatRequest):
 
     headers = {"Authorization": f"Bearer {HF_TOKEN}"}
     payload = {
-        "inputs": req.prompt,
-        "parameters": {
-            "max_new_tokens": 512,
-            "temperature": 0.7,
-            "return_full_text": False,
-        }
+        "model": f"{HF_MODEL}:auto",
+        "messages": [{"role": "user", "content": req.prompt}],
+        "max_tokens": 512,
+        "temperature": 0.7,
     }
 
     start = time.time()
@@ -76,8 +74,8 @@ async def chat(req: ChatRequest):
     elapsed = round(time.time() - start, 2)
 
     # extract text from response
-    if isinstance(data, list) and data:
-        response_text = data[0].get("generated_text", "").strip()
+    if isinstance(data, dict) and data.get("choices"):
+        response_text = data["choices"][0]["message"]["content"].strip()
     else:
         response_text = str(data)
 
