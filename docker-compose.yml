@@ -20,6 +20,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://allam:allam123@db:5432/allamdb
       HF_TOKEN: ${HF_TOKEN}
+      HF_ENDPOINT_URL: ${HF_ENDPOINT_URL:-}
     depends_on:
       db:
         condition: service_healthy

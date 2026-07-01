@@ -34,9 +34,14 @@ async def startup():
         await conn.run_sync(Base.metadata.create_all)
 
 # ── HuggingFace config ─────────────────────────────────────
-HF_TOKEN  = os.getenv("HF_TOKEN", "")
-HF_MODEL  = "ALLaM-AI/ALLaM-7B-Instruct-preview"
-HF_URL    = "https://router.huggingface.co/v1/chat/completions"
+# ALLaM-7B-Instruct-preview isn't served by any HF Inference Provider,
+# so it requires a dedicated HF Inference Endpoint (huggingface.co/inference-endpoints).
+# Set HF_ENDPOINT_URL to that endpoint's base URL once deployed.
+HF_TOKEN        = os.getenv("HF_TOKEN", "")
+HF_MODEL        = "ALLaM-AI/ALLaM-7B-Instruct-preview"
+HF_ENDPOINT_URL = os.getenv("HF_ENDPOINT_URL", "").rstrip("/")
+HF_URL          = f"{HF_ENDPOINT_URL}/v1/chat/completions" if HF_ENDPOINT_URL \
+                   else "https://router.huggingface.co/v1/chat/completions"
 
 # ── Request models ─────────────────────────────────────────
 class ChatRequest(BaseModel):
@@ -54,7 +59,8 @@ async def chat(req: ChatRequest):
 
     headers = {"Authorization": f"Bearer {HF_TOKEN}"}
     payload = {
-        "model": HF_MODEL,
+        # Dedicated endpoints ignore the model field; the router needs the repo id.
+        "model": "tgi" if HF_ENDPOINT_URL else HF_MODEL,
         "messages": [{"role": "user", "content": req.prompt}],
         "max_tokens": 512,
         "temperature": 0.7,
