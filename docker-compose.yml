@@ -18,15 +18,20 @@ services:
   # instead of downloading it itself. No resume (-C -): these signed CDN
   # redirect URLs don't reliably support range resumption and silently
   # produce a corrupted file when resumed after an interrupted transfer.
+  # Skips re-downloading on subsequent `up`s if the full file is already
+  # in the volume from a prior run.
   model-fetch:
     image: curlimages/curl:latest
     user: root
+    entrypoint: ["/bin/sh", "-c"]
     volumes:
       - llm_models:/models
     command: >
-      -L --fail --create-dirs
-      -o /models/allam.gguf
-      https://huggingface.co/bartowski/ALLaM-AI_ALLaM-7B-Instruct-preview-GGUF/resolve/main/ALLaM-AI_ALLaM-7B-Instruct-preview-Q4_K_M.gguf
+      if [ "$(stat -c %s /models/allam.gguf 2>/dev/null || echo 0)" = "4263194400" ]; then
+        echo "Model already present, skipping download.";
+      else
+        curl -L --fail --create-dirs -o /models/allam.gguf https://huggingface.co/bartowski/ALLaM-AI_ALLaM-7B-Instruct-preview-GGUF/resolve/main/ALLaM-AI_ALLaM-7B-Instruct-preview-Q4_K_M.gguf;
+      fi
 
   # Self-hosted CPU inference for ALLaM via a quantized GGUF build.
   # First start downloads the model (~4GB) before it starts serving;
