@@ -36,7 +36,7 @@ async def startup():
 # ── HuggingFace config ─────────────────────────────────────
 HF_TOKEN  = os.getenv("HF_TOKEN", "")
 HF_MODEL  = "humain-ai/ALLaM-7B-Instruct-preview"
-HF_URL    = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+HF_URL    = f"https://router.huggingface.co/hf-inference/models/{HF_MODEL}"
 
 # ── Request models ─────────────────────────────────────────
 class ChatRequest(BaseModel):
