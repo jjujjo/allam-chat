@@ -13,34 +13,38 @@ services:
       interval: 5s
       retries: 5
 
-  # llama-server's built-in -hf downloader hangs for this repo, so fetch the
-  # GGUF with plain curl first and have llama-server load it from disk
-  # instead of downloading it itself. No resume (-C -): these signed CDN
-  # redirect URLs don't reliably support range resumption and silently
-  # produce a corrupted file when resumed after an interrupted transfer.
-  # The transfer has also been observed to truncate silently (curl exits 0
-  # with fewer bytes than Content-Length) on this multi-GB download, so
-  # verify the final size and retry (bounded) instead of trusting one
-  # attempt. Skips entirely if a complete file is already in the volume.
+  # Plain curl kept silently truncating this multi-GB download (it's served
+  # via HF's chunked Xet/CAS storage, which curl doesn't reconstruct as
+  # reliably as HF's own tooling). Use huggingface_hub's official
+  # downloader instead - it understands that protocol and resumes properly
+  # - wrapped in a bounded retry loop with a final size check as a safety
+  # net. Skips entirely if a complete file is already in the volume.
   model-fetch:
-    image: curlimages/curl:latest
+    image: python:3.12-slim
     user: root
     entrypoint: ["/bin/sh", "-c"]
     volumes:
       - llm_models:/models
     command:
       - |
-        i=0
-        while [ "$(stat -c %s /models/allam.gguf 2>/dev/null || echo 0)" != "4263194400" ] && [ $$i -lt 5 ]; do
-          i=$$((i+1))
-          echo "Download attempt $$i..."
-          curl -L --fail --create-dirs -o /models/allam.gguf https://huggingface.co/bartowski/ALLaM-AI_ALLaM-7B-Instruct-preview-GGUF/resolve/main/ALLaM-AI_ALLaM-7B-Instruct-preview-Q4_K_M.gguf
-        done
-        if [ "$(stat -c %s /models/allam.gguf 2>/dev/null || echo 0)" != "4263194400" ]; then
-          echo "Download incomplete after $$i attempts"
-          exit 1
+        set -e
+        if [ "$(stat -c %s /models/allam.gguf 2>/dev/null || echo 0)" = "4263194400" ]; then
+          echo "Model already present, skipping download."
+        else
+          pip install --quiet --no-cache-dir -U "huggingface_hub[cli]"
+          i=0
+          while [ "$(stat -c %s /models/allam.gguf 2>/dev/null || echo 0)" != "4263194400" ] && [ $$i -lt 3 ]; do
+            i=$$((i+1))
+            echo "Download attempt $$i..."
+            hf download bartowski/ALLaM-AI_ALLaM-7B-Instruct-preview-GGUF ALLaM-AI_ALLaM-7B-Instruct-preview-Q4_K_M.gguf --local-dir /models
+            mv -f /models/ALLaM-AI_ALLaM-7B-Instruct-preview-Q4_K_M.gguf /models/allam.gguf 2>/dev/null || true
+          done
+          if [ "$(stat -c %s /models/allam.gguf 2>/dev/null || echo 0)" != "4263194400" ]; then
+            echo "Download incomplete after $$i attempts"
+            exit 1
+          fi
+          echo "Model ready."
         fi
-        echo "Model ready."
 
   # Self-hosted CPU inference for ALLaM via a quantized GGUF build.
   # First start downloads the model (~4GB) before it starts serving;
