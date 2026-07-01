@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ALLaM // STC</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <div id="shell">
+
+    <!-- ── Sidebar ── -->
+    <aside id="sidebar">
+      <div id="brand">
+        <span class="brand-stc">STC</span><span class="brand-ai">_AI</span>
+        <div class="brand-sub">ALLAM TERMINAL v1.0</div>
+      </div>
+
+      <nav>
+        <button class="nav-btn active" data-tab="chat">
+          <span class="nav-icon">▶</span> CHAT
+        </button>
+        <button class="nav-btn" data-tab="insights">
+          <span class="nav-icon">◈</span> INSIGHTS
+        </button>
+        <button class="nav-btn" data-tab="history">
+          <span class="nav-icon">≡</span> HISTORY
+        </button>
+      </nav>
+
+      <div id="sidebar-footer">
+        <div class="status-dot"></div> ENGINE ONLINE
+      </div>
+    </aside>
+
+    <!-- ── Main ── -->
+    <main id="main">
+
+      <!-- CHAT TAB -->
+      <div id="tab-chat" class="tab active">
+        <div id="chat-header">
+          <span>// ALLAM-7B-INSTRUCT</span>
+          <span id="last-response-time"></span>
+        </div>
+
+        <div id="messages">
+          <div class="msg system">
+            <span class="msg-tag">SYS</span>
+            <span class="msg-text">ALLaM terminal ready. Type your prompt below.</span>
+          </div>
+        </div>
+
+        <div id="input-area">
+          <span class="prompt-arrow">❯</span>
+          <textarea id="prompt-input" rows="1" placeholder="enter prompt..."></textarea>
+          <button id="send-btn">SEND</button>
+        </div>
+      </div>
+
+      <!-- INSIGHTS TAB -->
+      <div id="tab-insights" class="tab">
+        <div class="tab-title">// INSIGHTS</div>
+
+        <div id="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">TOTAL CHATS</div>
+            <div class="stat-val" id="stat-total">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">THIS WEEK</div>
+            <div class="stat-val" id="stat-week">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">AVG RESPONSE</div>
+            <div class="stat-val" id="stat-avg">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">FASTEST</div>
+            <div class="stat-val" id="stat-fast">—</div>
+          </div>
+        </div>
+
+        <div class="section-title">DAILY USAGE — PAST 7 DAYS</div>
+        <div id="daily-chart"></div>
+
+        <div class="section-title">RECENT PROMPTS</div>
+        <div id="recent-prompts"></div>
+      </div>
+
+      <!-- HISTORY TAB -->
+      <div id="tab-history" class="tab">
+        <div class="tab-title">// CONVERSATION HISTORY</div>
+        <div id="history-list"></div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>

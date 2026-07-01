@@ -1,0 +1,28 @@
+services:
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: allam
+      POSTGRES_PASSWORD: allam123
+      POSTGRES_DB: allamdb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U allam -d allamdb"]
+      interval: 5s
+      retries: 5
+
+  web:
+    build: .
+    ports:
+      - "8001:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://allam:allam123@db:5432/allamdb
+      HF_TOKEN: ${HF_TOKEN}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
