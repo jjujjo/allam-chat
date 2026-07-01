@@ -14,15 +14,17 @@ services:
       retries: 5
 
   # llama-server's built-in -hf downloader hangs for this repo, so fetch the
-  # GGUF with plain curl first (resumable) and have llama-server load it
-  # from disk instead of downloading it itself.
+  # GGUF with plain curl first and have llama-server load it from disk
+  # instead of downloading it itself. No resume (-C -): these signed CDN
+  # redirect URLs don't reliably support range resumption and silently
+  # produce a corrupted file when resumed after an interrupted transfer.
   model-fetch:
     image: curlimages/curl:latest
     user: root
     volumes:
       - llm_models:/models
     command: >
-      -L --fail --create-dirs -C -
+      -L --fail --create-dirs
       -o /models/allam.gguf
       https://huggingface.co/bartowski/ALLaM-AI_ALLaM-7B-Instruct-preview-GGUF/resolve/main/ALLaM-AI_ALLaM-7B-Instruct-preview-Q4_K_M.gguf
 
