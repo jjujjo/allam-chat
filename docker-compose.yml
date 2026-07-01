@@ -13,17 +13,36 @@ services:
       interval: 5s
       retries: 5
 
+  # Self-hosted CPU inference for ALLaM via a quantized GGUF build.
+  # First start downloads the model (a few GB) before it starts serving;
+  # `web` will get connection errors until `docker compose logs llm` shows
+  # it listening on port 8080.
+  llm:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    volumes:
+      - llm_models:/root/.cache/llama.cpp
+    command: >
+      -hf bartowski/ALLaM-AI_ALLaM-7B-Instruct-preview-GGUF:Q4_K_M
+      --host 0.0.0.0
+      --port 8080
+      -c 4096
+    ports:
+      - "8080:8080"
+
   web:
     build: .
     ports:
       - "8001:8000"
     environment:
       DATABASE_URL: postgresql+asyncpg://allam:allam123@db:5432/allamdb
-      HF_TOKEN: ${HF_TOKEN}
-      HF_ENDPOINT_URL: ${HF_ENDPOINT_URL:-}
+      HF_TOKEN: ${HF_TOKEN:-}
+      HF_ENDPOINT_URL: ${HF_ENDPOINT_URL:-http://llm:8080}
     depends_on:
       db:
         condition: service_healthy
+      llm:
+        condition: service_started
 
 volumes:
   pgdata:
+  llm_models:
