@@ -28,17 +28,19 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     volumes:
       - llm_models:/models
-    command: >
-      i=0;
-      while [ "$(stat -c %s /models/allam.gguf 2>/dev/null || echo 0)" != "4263194400" ] && [ $$i -lt 5 ]; do
-        i=$$((i+1));
-        echo "Download attempt $$i...";
-        curl -L --fail --create-dirs -o /models/allam.gguf https://huggingface.co/bartowski/ALLaM-AI_ALLaM-7B-Instruct-preview-GGUF/resolve/main/ALLaM-AI_ALLaM-7B-Instruct-preview-Q4_K_M.gguf;
-      done;
-      if [ "$(stat -c %s /models/allam.gguf 2>/dev/null || echo 0)" != "4263194400" ]; then
-        echo "Download incomplete after $$i attempts"; exit 1;
-      fi;
-      echo "Model ready.";
+    command:
+      - |
+        i=0
+        while [ "$(stat -c %s /models/allam.gguf 2>/dev/null || echo 0)" != "4263194400" ] && [ $$i -lt 5 ]; do
+          i=$$((i+1))
+          echo "Download attempt $$i..."
+          curl -L --fail --create-dirs -o /models/allam.gguf https://huggingface.co/bartowski/ALLaM-AI_ALLaM-7B-Instruct-preview-GGUF/resolve/main/ALLaM-AI_ALLaM-7B-Instruct-preview-Q4_K_M.gguf
+        done
+        if [ "$(stat -c %s /models/allam.gguf 2>/dev/null || echo 0)" != "4263194400" ]; then
+          echo "Download incomplete after $$i attempts"
+          exit 1
+        fi
+        echo "Model ready."
 
   # Self-hosted CPU inference for ALLaM via a quantized GGUF build.
   # First start downloads the model (~4GB) before it starts serving;
