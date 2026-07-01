@@ -34,9 +34,14 @@ async def startup():
         await conn.run_sync(Base.metadata.create_all)
 
 # ── HuggingFace config ─────────────────────────────────────
-HF_TOKEN  = os.getenv("HF_TOKEN", "")
-HF_MODEL  = "humain-ai/ALLaM-7B-Instruct-preview"
-HF_URL    = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+# ALLaM-7B-Instruct-preview isn't served by any HF Inference Provider,
+# so it requires a dedicated HF Inference Endpoint (huggingface.co/inference-endpoints).
+# Set HF_ENDPOINT_URL to that endpoint's base URL once deployed.
+HF_TOKEN        = os.getenv("HF_TOKEN", "")
+HF_MODEL        = "ALLaM-AI/ALLaM-7B-Instruct-preview"
+HF_ENDPOINT_URL = os.getenv("HF_ENDPOINT_URL", "").rstrip("/")
+HF_URL          = f"{HF_ENDPOINT_URL}/v1/chat/completions" if HF_ENDPOINT_URL \
+                   else "https://router.huggingface.co/v1/chat/completions"
 
 # ── Request models ─────────────────────────────────────────
 class ChatRequest(BaseModel):
@@ -54,12 +59,11 @@ async def chat(req: ChatRequest):
 
     headers = {"Authorization": f"Bearer {HF_TOKEN}"}
     payload = {
-        "inputs": req.prompt,
-        "parameters": {
-            "max_new_tokens": 512,
-            "temperature": 0.7,
-            "return_full_text": False,
-        }
+        # Dedicated endpoints ignore the model field; the router needs the repo id.
+        "model": "tgi" if HF_ENDPOINT_URL else HF_MODEL,
+        "messages": [{"role": "user", "content": req.prompt}],
+        "max_tokens": 512,
+        "temperature": 0.7,
     }
 
     start = time.time()
@@ -76,8 +80,8 @@ async def chat(req: ChatRequest):
     elapsed = round(time.time() - start, 2)
 
     # extract text from response
-    if isinstance(data, list) and data:
-        response_text = data[0].get("generated_text", "").strip()
+    if isinstance(data, dict) and data.get("choices"):
+        response_text = data["choices"][0]["message"]["content"].strip()
     else:
         response_text = str(data)
 
