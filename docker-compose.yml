@@ -13,21 +13,36 @@ services:
       interval: 5s
       retries: 5
 
+  # llama-server's built-in -hf downloader hangs for this repo, so fetch the
+  # GGUF with plain curl first (resumable) and have llama-server load it
+  # from disk instead of downloading it itself.
+  model-fetch:
+    image: curlimages/curl:latest
+    volumes:
+      - llm_models:/models
+    command: >
+      -L --fail --create-dirs -C -
+      -o /models/allam.gguf
+      https://huggingface.co/bartowski/ALLaM-AI_ALLaM-7B-Instruct-preview-GGUF/resolve/main/ALLaM-AI_ALLaM-7B-Instruct-preview-Q4_K_M.gguf
+
   # Self-hosted CPU inference for ALLaM via a quantized GGUF build.
-  # First start downloads the model (a few GB) before it starts serving;
+  # First start downloads the model (~4GB) before it starts serving;
   # `web` will get connection errors until `docker compose logs llm` shows
   # it listening on port 8080.
   llm:
     image: ghcr.io/ggml-org/llama.cpp:server
     volumes:
-      - llm_models:/root/.cache/llama.cpp
+      - llm_models:/models
     command: >
-      -hf bartowski/ALLaM-AI_ALLaM-7B-Instruct-preview-GGUF:Q4_K_M
+      -m /models/allam.gguf
       --host 0.0.0.0
       --port 8080
       -c 4096
     ports:
       - "8080:8080"
+    depends_on:
+      model-fetch:
+        condition: service_completed_successfully
 
   web:
     build: .
