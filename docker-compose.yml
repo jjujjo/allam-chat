@@ -18,6 +18,7 @@ services:
   # from disk instead of downloading it itself.
   model-fetch:
     image: curlimages/curl:latest
+    user: root
     volumes:
       - llm_models:/models
     command: >
