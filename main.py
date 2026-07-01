@@ -54,7 +54,7 @@ async def chat(req: ChatRequest):
 
     headers = {"Authorization": f"Bearer {HF_TOKEN}"}
     payload = {
-        "model": f"{HF_MODEL}:auto",
+        "model": HF_MODEL,
         "messages": [{"role": "user", "content": req.prompt}],
         "max_tokens": 512,
         "temperature": 0.7,
