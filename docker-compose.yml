@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: allam123
       POSTGRES_DB: allamdb
     volumes:
-      - pgdocker compose logs -f model-fetchdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U allam -d allamdb"]
       interval: 5s
