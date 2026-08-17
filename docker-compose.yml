@@ -71,8 +71,9 @@ services:
       - "8001:8000"
     environment:
       DATABASE_URL: postgresql+asyncpg://allam:allam123@db:5432/allamdb
-      HF_TOKEN: ${HF_TOKEN:-}
-      HF_ENDPOINT_URL: ${HF_ENDPOINT_URL:-http://llm:8080}
+      LLM_API_URL: ${LLM_API_URL:-http://llm:8080}
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-allam}
+      LLM_API_KEY: ${LLM_API_KEY:-}
     depends_on:
       db:
         condition: service_healthy

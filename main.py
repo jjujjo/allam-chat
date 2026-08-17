@@ -10,7 +10,7 @@ import os
 import time
 import httpx
 
-app = FastAPI(title="ALLaM Chat")
+app = FastAPI(title="LLM Chat")
 
 # ── Database ───────────────────────────────────────────────
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./chat.db")
@@ -33,15 +33,13 @@ async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-# ── HuggingFace config ─────────────────────────────────────
-# ALLaM-7B-Instruct-preview isn't served by any HF Inference Provider,
-# so it requires a dedicated HF Inference Endpoint (huggingface.co/inference-endpoints).
-# Set HF_ENDPOINT_URL to that endpoint's base URL once deployed.
-HF_TOKEN        = os.getenv("HF_TOKEN", "")
-HF_MODEL        = "ALLaM-AI/ALLaM-7B-Instruct-preview"
-HF_ENDPOINT_URL = os.getenv("HF_ENDPOINT_URL", "").rstrip("/")
-HF_URL          = f"{HF_ENDPOINT_URL}/v1/chat/completions" if HF_ENDPOINT_URL \
-                   else "https://router.huggingface.co/v1/chat/completions"
+# ── LLM endpoint config ────────────────────────────────────
+# Works with any OpenAI-compatible /v1/chat/completions endpoint: Ollama,
+# vLLM, llama.cpp server, HuggingFace Inference Endpoints, OpenAI, etc.
+LLM_API_URL    = os.getenv("LLM_API_URL", "http://localhost:8080").rstrip("/")
+LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "default-model")
+LLM_API_KEY    = os.getenv("LLM_API_KEY", "")  # optional bearer token, e.g. for OpenAI
+LLM_CHAT_URL   = f"{LLM_API_URL}/v1/chat/completions"
 
 # ── Request models ─────────────────────────────────────────
 class ChatRequest(BaseModel):
@@ -57,10 +55,11 @@ async def chat(req: ChatRequest):
     if not req.prompt.strip():
         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
 
-    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+    headers = {}
+    if LLM_API_KEY:
+        headers["Authorization"] = f"Bearer {LLM_API_KEY}"
     payload = {
-        # Dedicated endpoints ignore the model field; the router needs the repo id.
-        "model": "tgi" if HF_ENDPOINT_URL else HF_MODEL,
+        "model": LLM_MODEL_NAME,
         "messages": [{"role": "user", "content": req.prompt}],
         "max_tokens": 512,
         "temperature": 0.7,
@@ -69,11 +68,11 @@ async def chat(req: ChatRequest):
     start = time.time()
     try:
         async with httpx.AsyncClient(timeout=60) as client:
-            res = await client.post(HF_URL, headers=headers, json=payload)
+            res = await client.post(LLM_CHAT_URL, headers=headers, json=payload)
             res.raise_for_status()
             data = res.json()
     except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=502, detail=f"ALLaM API error: {e.response.text}")
+        raise HTTPException(status_code=502, detail=f"LLM API error: {e.response.text}")
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
 
@@ -99,6 +98,10 @@ async def chat(req: ChatRequest):
         "response":      response_text,
         "response_time": elapsed,
     }
+
+@app.get("/api/config")
+async def config():
+    return {"model_name": LLM_MODEL_NAME}
 
 @app.get("/api/history")
 async def history():

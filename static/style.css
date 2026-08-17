@@ -171,7 +171,7 @@ nav {
 }
 
 .msg.user .msg-tag    { color: var(--pink);   border-color: var(--pink); }
-.msg.allam .msg-tag   { color: var(--purple); border-color: var(--purple); }
+.msg.llm .msg-tag     { color: var(--purple); border-color: var(--purple); }
 .msg.system .msg-tag  { color: var(--text-dim); border-color: var(--dim); }
 .msg.error .msg-tag   { color: #ff4444; border-color: #ff4444; }
 

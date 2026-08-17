@@ -1,3 +1,16 @@
+/* ── Config ──────────────────────────────────────────────── */
+async function loadConfig() {
+  const label = document.getElementById("model-label");
+  try {
+    const res  = await fetch("/api/config");
+    const data = await res.json();
+    label.textContent = `// SERVING: ${data.model_name.toUpperCase()}`;
+  } catch (e) {
+    label.textContent = "// MODEL UNAVAILABLE";
+  }
+}
+loadConfig();
+
 /* ── Tab navigation ──────────────────────────────────────── */
 document.querySelectorAll(".nav-btn").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -28,8 +41,8 @@ function addMsg(tag, text, type) {
 
 function addTyping() {
   const div = document.createElement("div");
-  div.className = "msg allam typing";
-  div.innerHTML = `<span class="msg-tag">ALLAM</span><span class="msg-text"></span>`;
+  div.className = "msg llm typing";
+  div.innerHTML = `<span class="msg-tag">LLM</span><span class="msg-text"></span>`;
   messages.appendChild(div);
   messages.scrollTop = messages.scrollHeight;
   return div;
@@ -65,7 +78,7 @@ async function sendMessage() {
       return;
     }
 
-    addMsg("ALLAM", data.response, "allam");
+    addMsg("LLM", data.response, "llm");
     lastTime.textContent = `LAST RESPONSE: ${data.response_time}s`;
 
   } catch (e) {
